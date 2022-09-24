@@ -20,28 +20,6 @@ import { create } from '@mui/material/styles/createTransitions';
 
 
 
-// function Phones() {
-//     const [phones, setPhones] = useState([])
-      
-//     return (
-//         <>
-//           {phones.map(({value, key}, index) => {
-//             return <Phone value={value}
-//                           key={key}
-//                           onChange={(e) => {
-//                             const newPhones = [...phones]
-//                             newPhones[index].value = e.target.value
-//                             setPhones(newPhones)
-//                           }
-//             }/>
-//           })}
-//           <button onClick={() => setPhones([{key: Date.now(), value: ''}, ...phones])}>+</button>
-//         </>
-//     )
-//   }
-
-
-
 const  SidebarOptions = ({ title ,Icon })=> {
 
     return (

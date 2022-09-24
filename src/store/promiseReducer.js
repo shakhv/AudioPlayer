@@ -40,16 +40,3 @@ export  function promiseReducer(state = {}, { type, name, status, payload, error
 
       
 
-
-// const options = {
-// 	method: 'GET',
-// 	headers: {
-// 		'X-RapidAPI-Key': '178f537be7msh65b13e3a16dec34p171119jsn86dffee368d7',
-// 		'X-RapidAPI-Host': 'spotify23.p.rapidapi.com'
-// 	}
-// };
-
-// fetch('https://spotify23.p.rapidapi.com/search/?q=%3CREQUIRED%3E&type=multi&offset=0&limit=10&numberOfTopResults=5', options)
-// 	.then(response => response.json())
-// 	.then(response => console.log(response))
-// 	.catch(err => console.error(err));
