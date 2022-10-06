@@ -4,7 +4,6 @@ import logo from '../images/logo.svg'
 
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
-// import AddIcon from '@mui/icons-material/LibraryMusic';
 
 import AddIcon from '@mui/icons-material/Add';
 import { connect } from 'react-redux';
@@ -15,13 +14,12 @@ import { actionAddPlaylist } from '../actions/Actions';
 import { Input, Grid} from "@nextui-org/react";
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import { Button } from '@mui/material';
-import { create } from '@mui/material/styles/createTransitions';
+
 
 
 
 
 const  SidebarOptions = ({ title ,Icon })=> {
-
     return (
          <div className="sidebarOption">
             {Icon && <Icon className = "sidebarOption__icon"/>}
@@ -29,9 +27,6 @@ const  SidebarOptions = ({ title ,Icon })=> {
         </div>  
     )
 }
-
-
-   
 
 
 const SideBarMenuItem = ({playlist: {_id, name}}) =>
@@ -50,11 +45,8 @@ const SideBarContainer = ({playlists = []}) =>
 const SideBarConnect = connect((state) => ({playlists: state.promise.userPlaylists?.payload}))(SideBarContainer)
 
 
-
-
 //  !MAIN WORKING
 function Playlist({onChange, action, value }) {
-
 
     return (
         <div>
@@ -84,59 +76,58 @@ function Playlist({onChange, action, value }) {
 function PlaylistAdd({add}) {
     const [playlist, setPlaylist] = useState([])
     const [clicked, setClicked] = useState(false)
-      
 
     return (
         <> 
-       
-            {
-                    <Button disabled={clicked}>
-                        <AddIcon 
-                        disabled = {clicked}
-                        className='sidebarOption' 
-                        onClick={() =>  setPlaylist([{key: Date.now(), value: ''}, ...playlist] , setClicked(true))}/>
-                    </Button>
-                    
-            }
-
-
-       
-
-          {playlist.map(({value, key}, index) => {
-            return <Playlist value={value}
-                          key={key}
-                          action={add}
-                          onChange={(e) => {
-                            const newplaylist = [...playlist]
-                            newplaylist[index].value = e.target.value
-                            setPlaylist(newplaylist)
-                          }
-            }/>
+        {
+            <Button disabled={clicked}>
+                <AddIcon 
+                disabled = {clicked}
+                className='sidebarOption' 
+                onClick={() =>  setPlaylist([{key: Date.now(), value: ''}, ...playlist] , setClicked(true))}/>
+            </Button>
+        }
+        {
+            playlist.map(({value, key}, index) => {
+                return <Playlist 
+                            value={value}
+                            key={key}
+                            action={add}
+                            onChange={(e) => {
+                                const newplaylist = [...playlist]
+                                newplaylist[index].value = e.target.value
+                                setPlaylist(newplaylist)
+                            }
+        }
+            />
           })}
         </>
     )
   }
 
-
 export const CPlaylistAdd = connect(null, { add: actionAddPlaylist })(PlaylistAdd)
 
 
-export const SideBar = () =>
-<div className='sidebar'>
-  <img src={logo} className="sidebar__logo"/>
-  <br/>
+export const SideBar = () =>{
+    return (
+        <div className='sidebar'>
+        <img src={logo} className="sidebar__logo"/>
+        <br/>
 
-      <SidebarOptions Icon={HomeOutlinedIcon} title="Home"/>
-      <SidebarOptions Icon={ManageSearchIcon} title="Search"/>
-      <SidebarOptions Icon={AddIcon} title="Create playlist"/>
+        <SidebarOptions Icon={HomeOutlinedIcon} title="Home"/>
+        <SidebarOptions Icon={ManageSearchIcon} title="Search"/>
+        <SidebarOptions Icon={AddIcon} title="Create playlist"/>
 
-      <strong className='sidebar__title'><p>PLAYLISTS</p></strong>
+        <strong className='sidebar__title'><p>PLAYLISTS</p></strong>
 
-      <hr/>
-      {/* <CPlaylistAdd /> */}
-      <SideBarConnect />
-      
-</div>
+        <hr/>
+        <SideBarConnect />
+
+        </div>
+    )
+}
+
+
 
 
 

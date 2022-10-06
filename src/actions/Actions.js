@@ -1,18 +1,12 @@
-import React, { useState } from "react";
-import { useEffect } from "react";
-import {promiseReducer , jwtDecode , backendURL , gql } from "../store/promiseReducer"
+import {jwtDecode , backendURL , gql } from "../store/promiseReducer"
 import { store } from "../store/store"
-import { authReducer } from "../store/authReducer"
-import { connect } from "react-redux";
-
-
-
 
 // ! PROMISE
-const actionPending = (name) => ({
+const actionPending = (name , payload) => ({
     type: "PROMISE",
-    status: "PENDING",
+    status: "PENDING" , 
     name,
+    payload
   });
 
 const actionFulfilled = (name, payload) => ({
@@ -28,6 +22,19 @@ const actionRejected = (name, error) => ({
     name,
     error,
   });
+
+const actionDelete = (name,payload) => ({
+    type: "DELETE_PROMISE" ,
+    status: "DELETE",
+    name,
+    payload
+})
+
+
+export const deletePromise = (name , payload) => {
+    store.dispatch(actionDelete(`${name}`, payload))
+}
+
 
 export  const actionPromise = (name, promise) => async (dispatch) => {
     try {
@@ -48,25 +55,24 @@ export const actionAuthLogout = () => (dispatch) => {
     localStorage.removeItem("authToken");
   };
 
+
 export const actionLogin = (login, password) =>
     actionPromise('login', gql(`
     query log($login:String!, $password:String!){
         login(login: $login, password: $password)
       }`, { login, password }))
 
+
+
 export const actionFullLogin = (login , password ) =>
     async dispatch => {
         let token = await dispatch(actionLogin(login, password))
         if (token) {
-
             await dispatch(actionAuthLogin(token))
             await dispatch(actionGetUserData())
-            // MAIN
-            await dispatch(actionAllPlaylists()) 
-            await dispatch(actionGetUserPlaylists())
-            // await dispatch(actionGetUsersPlaylistByID())
         }
     }
+
 
 // ! REGISTRATION
 export const actionRegister = (login, password) =>
@@ -86,18 +92,24 @@ export const actionFullRegister = (login, password) =>
     }
 
 
+
 // !PLAYLISTS
 export const actionAllPlaylists = (_id) => 
-actionPromise('allPlaylists', gql(`
-query playlistsAll($q: String){
-	PlaylistFind(query: $q){
-    _id name tracks {
-        _id url originalFileName
-    }
-  }
+async (dispatch , getState) =>{
+    if(getState().promise.allPlaylists?.status === "PENDING") return
+    const oldPlaylists = getState().promise.allPlaylists?.payload || []
+    dispatch(actionPending('allPlaylists' , oldPlaylists))
+    const newPlaylists = await gql(`
+        query playlistsAll($q: String){
+            PlaylistFind(query: $q){
+            _id name tracks {
+                _id url originalFileName
+            }
+        }}`, {q: JSON.stringify([{ _id }  ,{limit: [9], skip: [oldPlaylists.length] , sort: [{name: -1}]}] ) })
+        
+    const all = [...oldPlaylists , ...newPlaylists]
+    dispatch(actionFulfilled('allPlaylists' , all))
 }
-`, {q: JSON.stringify([{ _id }]) }))
-
 
 
 
@@ -121,7 +133,7 @@ export const actionGetUserPlaylists = () => {
         actionPromise('userPlaylists', gql(`
             query getPlaylistByOwnerId($ownerId:String!) {
                 PlaylistFind(query: $ownerId) {
-                    _id, name
+                    _id, name , tracks { _id , url , originalFileName}
                 }
             }
         `, { ownerId: JSON.stringify([{ ___owner: _id }]) }))
@@ -139,6 +151,27 @@ export const actionGetUserTracks = () => {
                 }
             }
         `, { ownerId: JSON.stringify([{ ___owner: _id }]) }))
+    )
+}
+
+export const actionTrackSearch = (text) => {
+    const arrayOf  = text.split(" ")
+    const search = arrayOf.join("|")
+
+    return (
+        actionPromise('search', gql(`
+        query search($query: String){
+            TrackFind(query: $query){
+                _id, url ,originalFileName
+            }
+        }`, {query: JSON.stringify([
+                    {
+                        $or: [{originalFileName: `/${search}/`}] //регулярки пишутся в строках
+                    },
+                    {
+                        sort: [{originalFileName: 1}]} //сортируем по title алфавитно
+                    ])
+        }))
     )
 }
 
@@ -179,7 +212,6 @@ export const actionGetUserTracks = () => {
     }
 
 
-
     export const actionAddPlaylist = (playlistName , descriptionName) =>
     async dispatch => {
         await dispatch(actionPromise('addPlaylist', gql(`
@@ -194,12 +226,11 @@ export const actionGetUserTracks = () => {
 
 
 
-    export const actionLoadFile = (file) => {
+    export const actionLoadFile = (file , type) => {
     let fd = new FormData()
-    fd.append('track' , file)
-
+    fd.append(type === 'upload' ? 'photo' : type, file)
     return (
-        actionPromise('loadFile', fetch(backendURL + '/track', {
+        actionPromise('loadFile', fetch(backendURL + '/' + `${type}`, {
             method: "POST",
             headers: localStorage.authToken ? { Authorization: 'Bearer ' + localStorage.authToken } : {},
             body: fd
@@ -210,12 +241,12 @@ export const actionGetUserTracks = () => {
     }
 
 
-    export const actionUploadAvatar = (file) =>
-    async (dispatch, getState) => {
-        await dispatch(actionLoadFile(file, 'upload'))
+    export const actionUploadAvatar = (uploadAvatar) =>
+    async (dispatch) => {
+        let _id = jwtDecode(localStorage.authToken).sub.id
         await dispatch(actionPromise('setAvatar', gql(`
         mutation {
-        UserUpsert(user:{_id: "${jwtDecode(localStorage.authToken).sub.id}", avatar: {_id: "${getState().promise?.loadFile?.payload?._id}"}}){
+        UserUpsert(user:{_id: "${_id}", avatar: {_id: "${uploadAvatar}"}}){
             _id, login, avatar{
                 _id, url
             }
@@ -226,28 +257,15 @@ export const actionGetUserTracks = () => {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    export const actionAllImages = () => {
+        let _id = jwtDecode(localStorage.authToken).sub.id
+        return (
+            actionPromise('images', gql(`
+            query ImageUser($ownerId: String!){
+                ImageFind(query: $ownerId){
+                  _id , url , originalFileName 
+                }
+              }
+            `, { ownerId: JSON.stringify([{ ___owner: _id }]) }))
+        )
+    }

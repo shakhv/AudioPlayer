@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react'
 import { connect } from 'react-redux'
-import { actionAddPlaylist } from '../../actions/Actions';
+import { actionAddPlaylist, deletePromise } from '../../actions/Actions';
 
 import { useNavigate } from 'react-router';
 
@@ -14,6 +14,7 @@ import Modal from '@mui/material/Modal';
 import {Input} from '@mui/material'
 
 import { Header } from './Body';
+import { store } from '../../store/store';
 
 const style = {
   position: 'absolute',
@@ -32,25 +33,23 @@ const style = {
 };
 
 
-
-
-
-const Playlist = ({onChange, action, value , setOpen, open , description , newIDPlaylist}) => { 
-  const [id , setID] = useState('')
+const PlaylistCreate = ({onChange, action, value , setOpen, open , description , newIDPlaylist}) => { 
   const history = useNavigate()
   const handleClose = () => {
     setOpen(false)
   }
 
- useEffect(() => {
-  setID(newIDPlaylist)
-  if(id?._id && value){
-    history(`/Player/playlist/${id._id}`)
-    console.log(id?._id)
+  const handleAdd = () => {
+      action(value , description)
   }
- }, [newIDPlaylist , id])
  
-
+  useEffect(() => {
+    if(newIDPlaylist?.status === "FULFILLED"){
+      history(`/Player/playlist/${newIDPlaylist?.payload?._id}`)
+      setTimeout(() =>  deletePromise('addPlaylist' , store.getState().promise.addPlaylist?.payload?._id), 1000)
+    }
+  }, [newIDPlaylist]) 
+  
   return (
        <Modal
         open={open}
@@ -74,20 +73,19 @@ const Playlist = ({onChange, action, value , setOpen, open , description , newID
                   sx={{mt: 1, width: 200}}/>
                  
                   <Button 
-                  onClick={() => action(value , description)} 
+                  onClick={() => handleAdd()} 
                   sx={{bgcolor : 'black', mt: 4, width: 200, color: 'aqua'}}>
                     SAVE
                   </Button>
-                  
                   
                 </Box>
           </Modal>
   )
 }
 
-const CPlaylist = connect(state => ({newIDPlaylist: state.promise.addPlaylist?.payload }))(Playlist)
+const CPlaylist = connect(state => ({newIDPlaylist: state.promise.addPlaylist || []}))(PlaylistCreate)
 
-    
+
 const CreatePlaylist = ({create}) => {
   const [playlist , setPlaylist] = useState([])
   const [open, setOpen] = useState(false);

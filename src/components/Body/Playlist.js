@@ -1,25 +1,21 @@
-import React , {useEffect, useState , useCallback} from 'react'
+import React , {useEffect, useState} from 'react'
 
 import { store } from '../../store/store'
-import { actionAddPlaylist, actionGetPlaylistById, actionGetUsersPlaylistByID, actionGetUserTracks, actionLoadFile, actionLoadTracksToPlaylist, actionTrackByID, actionTrackFindOne, actionUpdatePlaylist, actionUploadFile, actionUploadUserTrack } from '../../actions/Actions'
-import onButtonClick, { actionFullPlay, actionFullSetPlaylist, setTrack } from '../../store/playerReducer'
+import {actionGetUsersPlaylistByID,  actionUpdatePlaylist, deletePromise } from '../../actions/Actions'
+import {actionFullSetPlaylist, actionSetTrack} from '../../store/playerReducer'
 import { connect } from 'react-redux'
 
-import { Route , Routes , useRoutes ,useParams, useNavigate , Link} from 'react-router-dom'
+import {useParams} from 'react-router-dom'
 
-import { AddLink, ConnectingAirportsOutlined, Favorite, InputOutlined, InputRounded, InputSharp, InputTwoTone, MoreHoriz,  PlayCircleFilled, PlusOne, PlusOneOutlined, PowerInput, SatelliteAlt,} from '@mui/icons-material'
+import { Favorite,MoreHoriz,  PlayCircleFilled} from '@mui/icons-material'
 import { Header } from './Body'
 
 import albumCreate from '../../images/albumCreate.png'
 
 import { CUploadFile } from './Upload'
 import { arrayMoveImmutable } from 'array-move'
-import AddIcon from '@mui/icons-material/Add';
-import { Button } from 'bootstrap'
 
 
-
-import AutorenewIcon from '@mui/icons-material/Autorenew';
 // dnd-kit
 import {
   DndContext,
@@ -33,22 +29,59 @@ import { CSS } from "@dnd-kit/utilities";
 
 
 
-
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  const Item = ({tracks:{ _id , url, originalFileName}}) => {
 
-   
+
+  const Item = ({ getTracks , playlist , setPlaylist, setTrack , updatePlaylist , tracks:{ _id , url , originalFileName}}) => {
+
+    const params = useParams()
+    const [tracks , setTracks] = useState([])
+
+
+    useEffect(() => { 
+      setTracks(getTracks || [])
+    }, [getTracks])
+
+
+
+    const handleSetData = () => {
+          setPlaylist(playlist , params._id , tracks?.map(item => item)
+          )
+          setTrack(originalFileName , url , _id)
+    }
+    
+    const handleAdd = (event) => {
+        event.stopPropagation()
+        if(store.getState().playerReducer?.playlist?.tracks[0].length < 1){
+          setTimeout(() => setPlaylist( playlist ,playlist._id ,{_id , url , originalFileName}) , 1000)
+        }
+        setTimeout(() => updatePlaylist(playlist._id ,[{_id , url , originalFileName} , ...tracks]) , 3000)
+    }
 
     return (
-        <li className='songRow' >
+        <li className='songRow' key={_id} onClick={(e) => handleSetData(e)}>
           <div className='songRow__info'>
-            <h1  onClick={() => store.dispatch(actionFullPlay(_id , url))}>{originalFileName}</h1>
+            <h1>{originalFileName}</h1>
           </div>
+          <button 
+          onClick={(e) => handleAdd(e)}
+          className = { params["*"] ? "btn__add": "btn__dis"}
+          >+</button>
         </li>
     )
   }
- 
 
+
+  export const CItem = connect(state => ({
+    getTracks: state.promise.AllUsersPlaylistsByID?.payload?.tracks ,
+    playlist: state.promise.AllUsersPlaylistsByID?.payload || [],
+  }),{
+    setPlaylist: actionFullSetPlaylist,
+    setTrack: actionSetTrack,
+    updatePlaylist: actionUpdatePlaylist
+  })(Item)
+
+  
 const SortableItem = (props) => {
   const {
     attributes,
@@ -85,9 +118,9 @@ const SortableItem = (props) => {
   );
 };
 
-  const Droppable = ({ id, items, itemProp, keyField, render }) => {
+  const Droppable = ({ id, items, itemProp, keyField, render}) => {
     const { setNodeRef } = useDroppable({ id });
-  
+
     const droppableStyle = {
       //padding: "20px 10px",
       //border: "1px solid black",
@@ -95,14 +128,15 @@ const SortableItem = (props) => {
       //minWidth: 110
     };
    
+
     return (
       
-      <SortableContext id={id} items={items} strategy={rectSortingStrategy} onClick
+      <SortableContext id={id} items={items} strategy={rectSortingStrategy}
       >
-          {items.map((item) => (
-            item.originalFileName !== null ?  <SortableItem render={render} key={item[keyField]} id={item} 
-            itemProp={itemProp} item={item} onClick={onclick}/> : ''
-          ))}
+        {items.map((item , index) => (
+                  item.originalFileName !== null ? <SortableItem render={render} key={item[keyField]} id={item} index={index}
+                  itemProp={itemProp} item={item}/> : ''
+        )) }
       </SortableContext>
     );
   };
@@ -123,12 +157,14 @@ const SortableItem = (props) => {
         }
     },[items])
 
+
     const sensors = useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates
-        })
+      useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+      useSensor(KeyboardSensor, {
+        coordinateGetter: sortableKeyboardCoordinates,
+      })
     );
+
 
     const handleDragEnd = ({ active, over }) => {
         const activeIndex = active.data.current.sortable.index;
@@ -152,7 +188,6 @@ const SortableItem = (props) => {
                      itemProp={itemProp} 
                      keyField={keyField} 
                      render={render}
-                    
                      />
                      
       </div>
@@ -180,40 +215,38 @@ description: state.promise.AllUsersPlaylistsByID?.payload?.description
 })(Main)
 
 
-const PagePlaylist = ({getData , setToPlayer ,getTracks, newTracksLoad , updatePlaylist }) => {
+const PagePlaylist = ({getData ,getTracks, newTracksLoad , updatePlaylist}) => {
   
+
     const params = useParams()
 
     const [tracks , setTracks] = useState([])
-
 
     useEffect(() => { 
       getData(params._id)
     }, [params._id])
 
 
-    useEffect(() => { 
-      setToPlayer(params._id)
-    }, [params._id])
-
-
+    
     useEffect(() => { 
          setTracks(getTracks || [])
     }, [getTracks])
-
+   
 
     useEffect(() => { 
-      if(newTracksLoad !== tracks[0]){
-        updatePlaylist(params._id , [newTracksLoad ,...tracks])
+      if(newTracksLoad?.status === "FULFILLED") {
+          updatePlaylist(params._id , [newTracksLoad?.payload ,...tracks])
+          setTimeout(() => deletePromise('loadFile' , store.getState().promise.loadFile?.payload) , 1000)
       }
-    }, [newTracksLoad , updatePlaylist])
+    }, [newTracksLoad])
   
-   
+  
     return(
       <div className = "body">
           <Header />
           <CMain />
           <CUploadFile />
+
 
           <div className='body__songs'>
                     <div className="body__icons">
@@ -222,7 +255,7 @@ const PagePlaylist = ({getData , setToPlayer ,getTracks, newTracksLoad , updateP
                         <MoreHoriz />
                     </div>
 
-              <Dnd items={tracks} render={Item} itemProp="tracks" keyField="_id" 
+              <Dnd items={tracks} render={CItem} itemProp="tracks" keyField="_id" 
                 onChange={newArray =>  {
                   if(JSON.stringify(newArray) !== JSON.stringify(tracks)){
                     updatePlaylist(params._id , newArray)
@@ -237,13 +270,9 @@ const PagePlaylist = ({getData , setToPlayer ,getTracks, newTracksLoad , updateP
 
 
 export const CPagePlaylist = connect(state => ({
-  getTracks: state.promise.AllUsersPlaylistsByID?.payload?.tracks ,
-  newTracksLoad: state.promise.loadFile?.payload ,
+  getTracks: state.promise.AllUsersPlaylistsByID?.payload?.tracks,
+  newTracksLoad: state.promise.loadFile ,
 }) , {
-getData: actionGetUsersPlaylistByID,
-setToPlayer: actionFullSetPlaylist,
-updatePlaylist: actionUpdatePlaylist,
+  getData: actionGetUsersPlaylistByID,
+  updatePlaylist: actionUpdatePlaylist,
 })(PagePlaylist)
-
-
-

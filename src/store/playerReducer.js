@@ -1,13 +1,9 @@
-import {jwtDecode, backendURL } from './promiseReducer';
-// import { actionPromise } from '../actions/Actions';
+import {backendURL } from './promiseReducer';
 import { store } from './store';
-import { gql } from './promiseReducer';
-
-
 
 const audio = new Audio;
 
-export function audioReducer(state = [], {type , duration ,track, playlist , currentTime , volume}) {
+export function audioReducer(state = [], {type , playlist , playlist_id ,tracks_id ,track, url ,_id ,  currentTime ,duration , volume , repeat , index}) {
     if (!state) {
           return {};
     }
@@ -15,7 +11,6 @@ export function audioReducer(state = [], {type , duration ,track, playlist , cur
           return {
                 ...state,
                 isPlaying : true,
-                
           }
     }
     if(type === "PAUSE"){
@@ -25,6 +20,13 @@ export function audioReducer(state = [], {type , duration ,track, playlist , cur
           }
     }
 
+    if(type === "SET_REPEAT"){
+            return {
+                  ...state ,
+                  repeat
+                  }
+      }
+   
     if(type === "GET_DURATION"){
           return {
                 ...state , 
@@ -35,7 +37,7 @@ export function audioReducer(state = [], {type , duration ,track, playlist , cur
     if(type === "SET_PLAYLIST"){
           return {
                 ...state, 
-                playlist,
+                playlist: {playlist , playlist_id, tracks: [tracks_id]},
           }
     }
     if(type === "SET_CURRENT_TIME"){
@@ -50,85 +52,136 @@ export function audioReducer(state = [], {type , duration ,track, playlist , cur
                 volume
           }
     }
+    if(type === "INDEX"){
+      return {
+            ...state,
+               index
+            }
+      }
     if(type === "SET_TRACK"){
           return {
                 ...state,
-                isPlaying : true ,
-                  track
-                    // tracks 
+                  track: track ,
+                  url: url, 
+                  _id: _id
           }
     }
     
     return state;
 }
 
-export const actionPlay = () => ({ type: "PLAY"});
-const actionPause = () => ({ type : "PAUSE"})
-const actionDuration  = (duration) => ({ type: "GET_DURATION" , duration})
-const actionCurrentTime = (currentTime) => ({type: "SET_CURRENT_TIME" , currentTime})
-const actionSetTrack = (track) => ({type: 'SET_TRACK',track})
-const actionSetPlaylist = (playlist) => ({type:'SET_PLAYLIST', playlist})
+const setPlay = () => ({ type: "PLAY"});
+const setPause = (currentTime) => ({ type : "PAUSE" , currentTime})
+const setDuration  = (duration) => ({ type: "GET_DURATION" , duration})
+const setCurrentTime = (currentTime) => ({type: "SET_CURRENT_TIME" , currentTime})
+const setTrack = (track , url , _id ) => ({type: 'SET_TRACK', track , url , _id})
+const setPlaylist = (playlist , playlist_id , tracks_id) => ({type:'SET_PLAYLIST', playlist , playlist_id , tracks_id})
+const setVolume = (value) => ({type: 'SET_VOLUME' , volume: value})
+const setRepeat = (repeat) => ({type: `SET_REPEAT` , repeat})
 
 
-// export const actionFullPlay = () => (dispatch) => {
-//     dispatch(setTrack())
-//     actionFullDuration();
-//     actionFullCurrentTime();
-//     actionFullSetTrack();
-//     dispatch(actionPlay());
-//     audio.play();
-// }
-
-// export const actionFullPause = () => (dispatch) => {
-//     dispatch(actionPause())
-//     audio.pause();
-// }
+export const actionFullCurrentTime = (time) =>
+    (dispatch, getState) => {
+      audio.currentTime = time
+      getState().playerReducer?.isPlaying ? setTimeout(function() {
+            audio.play()
+        }, 0) : setTimeout(function() {
+            audio.pause()
+        }, 0);
+      dispatch(setCurrentTime(time))
+    }
 
 
+audio.ontimeupdate = (e) => store.dispatch(setCurrentTime(e.target.currentTime))
+audio.onended = () =>{
+       store.getState().playerReducer?.repeat === true ?  
+       store.dispatch(actionSetTrack(store.getState().playerReducer?.track , store.getState().playerReducer?.url , store.getState().playerReducer?._id))
+       : store.dispatch(actionNextTrack(store.getState().playerReducer?._id))  
+} 
+                  
 
-// export const actionFullCurrentTime = (currentTime) => {
-//     // audio.ontimeupdate = () => {
-//           // currentTime = audio.currentTime
-//           store.dispatch(actionCurrentTime(currentTime)) 
-//     // }            
-// }
+export const actionSetVolume = (volume) =>  dispatch => {
+      audio.volume = volume
+      dispatch(setVolume(volume))
+  }
 
 
-
-//  const backPlay = `http://player.node.ed.asmer.org.ua` + '/' + `${track}`
-
-export const actionFullPlay = (track , url) => dispatch =>{
-      console.log(track , url)
-      // audio.src = `http://player.node.ed.asmer.org.ua` + '/' + url 
-      // audio.play();
-      // dispatch(actionPlay())
-      // dispatch(setTrack(track , url))
-      // audio.onloadedmetadata = (() => dispatch(actionFullDuration(audio.duration)))
-      
+export const actionFullPlay = () => dispatch => {
+      dispatch(setPlay())
+      audio.play(); 
 }     
-
 
 
 export const actionFullDuration = (duration) =>  dispatch => {
       audio.ondurationchange = () => {
             duration = audio.duration
       }
-      dispatch(actionDuration(duration))
-}
-
-// export const actionFullPause = () => (dispatch) => {
-//       dispatch(actionPause())
-//       audio.pause();
-// }
-
-
-export const setTrack = (track , url) => (dispatch) => {
-     
-      dispatch(actionSetTrack(track))
+      dispatch(setDuration(Math.round(duration)))
 }
 
 
-export const actionFullSetPlaylist = (playlist) => dispatch => dispatch(actionSetPlaylist(playlist));
+export const actionFullPause = () => 
+      async (dispatch) => {
+            dispatch(setPause(audio.currentTime))
+            audio.pause();
+}
+
+
+export const actionSetTrack = (track , url , _id) => 
+     async (dispatch , getState) => {
+      audio.src = backendURL + '/' + url 
+      dispatch(setTrack(track ,url , _id))
+      audio.onloadedmetadata = (() => dispatch(actionFullDuration(audio.duration)))
+      dispatch(setPlay())
+      audio.play()
+}
+
+
+export const actionFullSetPlaylist = (playlist , playlist_id , tracks_id) =>
+ dispatch => {
+      dispatch(setPlaylist(playlist ,playlist_id , tracks_id));
+ }
     
 
-  
+export const actionPrevTrack = (_id) =>
+    async (dispatch, getState) => {
+        const playlist = [getState().playerReducer?.playlist?.tracks[0]]
+        if (playlist) {
+            const track_id = `${_id}`
+            const count = playlist[0].findIndex(el => el._id === track_id)
+            if(count > 0){
+                  dispatch(actionSetTrack(playlist[0][count - 1].originalFileName ,playlist[0][count - 1].url , playlist[0][count - 1]._id ))
+            }
+        }
+    }
+
+
+export const actionNextTrack = (_id) =>
+    async (dispatch, getState) => {
+        const playlist = [getState().playerReducer?.playlist?.tracks[0]]
+        if (playlist) {
+            const track_id = `${_id}`
+            const count = playlist[0].findIndex(el => el._id === track_id)
+            if(count + 1 < playlist[0].length){
+                  dispatch(actionSetTrack(playlist[0][count + 1].originalFileName ,playlist[0][count + 1].url , playlist[0][count + 1]._id ))
+            }
+        }
+    }
+
+
+export const actionRepeat = (repeat) => 
+      async (dispatch) => {
+            dispatch(setRepeat(repeat))
+      }
+
+
+export const actionRandom = () => 
+      async(dispatch , getState) => {
+            const playlist = [getState().playerReducer?.playlist?.tracks[0]]
+            if(playlist){
+                const random =  Math.round(Math.random() * playlist[0].length)
+                if(random){
+                       dispatch(actionSetTrack(playlist[0][random].originalFileName ,playlist[0][random].url , playlist[0][random]._id ))
+                }
+            }
+      }

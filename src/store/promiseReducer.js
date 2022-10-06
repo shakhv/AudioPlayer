@@ -6,11 +6,14 @@ export  function promiseReducer(state = {}, { type, name, status, payload, error
             [name]: { status, payload, error },
         };
     }
+    if(type === "DELETE_PROMISE"){
+      return {
+        ...state,
+        [name] : { payload: []}
+      }
+    }
     return state;
   }
-
-
-
 
   export function jwtDecode(token) {
     try {

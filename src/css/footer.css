@@ -1,3 +1,4 @@
+
 .footer {
     position: fixed;
     display: flex;
@@ -23,9 +24,17 @@
     color: white;
     width: 300px;
 }
-.footer__aqua {
-    color: aqua;
+
+.footer__silver {
+    color: silver;
 }
+.footer__aqua {
+    color: aqua
+}
+.footer__silver:hover {
+    color: aqua
+}
+
 .footer__songInfo {
     margin-bottom: 5px;
 

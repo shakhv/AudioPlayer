@@ -1,4 +1,3 @@
-import { store } from "./store";
 import { jwtDecode } from "./promiseReducer";
 
 export function authReducer(state, { type, token }) {
@@ -21,4 +20,5 @@ export function authReducer(state, { type, token }) {
     }
     return state || {};
   }
- 
+
+
