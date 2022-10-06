@@ -90,9 +90,9 @@ export const actionFullCurrentTime = (time) =>
         }, 0);
       dispatch(setCurrentTime(time))
       audio.onended = () =>{
-            store.getState().playerReducer?.repeat === true ?  
-            store.dispatch(actionSetTrack(store.getState().playerReducer?.track , store.getState().playerReducer?.url , store.getState().playerReducer?._id))
-            : store.dispatch(actionNextTrack(store.getState().playerReducer?._id))  
+            getState().playerReducer?.repeat === true ?  
+            dispatch(actionSetTrack(getState().playerReducer?.track ,getState().playerReducer?.url , getState().playerReducer?._id))
+            : dispatch(actionNextTrack(getState().playerReducer?._id))  
      } 
     }
 
