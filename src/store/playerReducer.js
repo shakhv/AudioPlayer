@@ -3,7 +3,7 @@ import { store } from './store';
 
 const audio = new Audio;
 
-export function audioReducer(state = [], {type , playlist , playlist_id ,tracks_id ,track, url ,_id ,  currentTime ,duration , volume , repeat , index}) {
+export function audioReducer(state = [], {type , playlist ,track, url ,_id ,  currentTime ,duration , volume , repeat , index}) {
     if (!state) {
           return {};
     }
@@ -37,7 +37,7 @@ export function audioReducer(state = [], {type , playlist , playlist_id ,tracks_
     if(type === "SET_PLAYLIST"){
           return {
                 ...state, 
-                playlist: {playlist , playlist_id, tracks: [tracks_id]},
+                playlist: {playlist},
           }
     }
     if(type === "SET_CURRENT_TIME"){
@@ -75,7 +75,7 @@ const setPause = (currentTime) => ({ type : "PAUSE" , currentTime})
 const setDuration  = (duration) => ({ type: "GET_DURATION" , duration})
 const setCurrentTime = (currentTime) => ({type: "SET_CURRENT_TIME" , currentTime})
 const setTrack = (track , url , _id ) => ({type: 'SET_TRACK', track , url , _id})
-const setPlaylist = (playlist , playlist_id , tracks_id) => ({type:'SET_PLAYLIST', playlist , playlist_id , tracks_id})
+const setPlaylist = (playlist) => ({type:'SET_PLAYLIST', playlist})
 const setVolume = (value) => ({type: 'SET_VOLUME' , volume: value})
 const setRepeat = (repeat) => ({type: `SET_REPEAT` , repeat})
 
@@ -89,15 +89,16 @@ export const actionFullCurrentTime = (time) =>
             audio.pause()
         }, 0);
       dispatch(setCurrentTime(time))
+      audio.onended = () =>{
+            store.getState().playerReducer?.repeat === true ?  
+            store.dispatch(actionSetTrack(store.getState().playerReducer?.track , store.getState().playerReducer?.url , store.getState().playerReducer?._id))
+            : store.dispatch(actionNextTrack(store.getState().playerReducer?._id))  
+     } 
     }
 
 
 audio.ontimeupdate = (e) => store.dispatch(setCurrentTime(e.target.currentTime))
-audio.onended = () =>{
-       store.getState().playerReducer?.repeat === true ?  
-       store.dispatch(actionSetTrack(store.getState().playerReducer?.track , store.getState().playerReducer?.url , store.getState().playerReducer?._id))
-       : store.dispatch(actionNextTrack(store.getState().playerReducer?._id))  
-} 
+
                   
 
 export const actionSetVolume = (volume) =>  dispatch => {
@@ -119,6 +120,7 @@ export const actionFullDuration = (duration) =>  dispatch => {
       dispatch(setDuration(Math.round(duration)))
 }
 
+audio.onloadedmetadata = (() => store.dispatch(actionFullDuration(audio.duration)))
 
 export const actionFullPause = () => 
       async (dispatch) => {
@@ -131,41 +133,36 @@ export const actionSetTrack = (track , url , _id) =>
      async (dispatch , getState) => {
       audio.src = backendURL + '/' + url 
       dispatch(setTrack(track ,url , _id))
-      audio.onloadedmetadata = (() => dispatch(actionFullDuration(audio.duration)))
       dispatch(setPlay())
       audio.play()
 }
 
 
-export const actionFullSetPlaylist = (playlist , playlist_id , tracks_id) =>
+export const actionFullSetPlaylist = (playlist) =>
  dispatch => {
-      dispatch(setPlaylist(playlist ,playlist_id , tracks_id));
+      dispatch(setPlaylist(playlist));
  }
     
 
 export const actionPrevTrack = (_id) =>
     async (dispatch, getState) => {
-        const playlist = [getState().playerReducer?.playlist?.tracks[0]]
-        if (playlist) {
+        const playlist = getState().playerReducer?.playlist?.playlist?.tracks
             const track_id = `${_id}`
-            const count = playlist[0].findIndex(el => el._id === track_id)
+            const count = playlist.findIndex(el => el._id === track_id)
             if(count > 0){
-                  dispatch(actionSetTrack(playlist[0][count - 1].originalFileName ,playlist[0][count - 1].url , playlist[0][count - 1]._id ))
+                  dispatch(actionSetTrack(playlist[count - 1].originalFileName ,playlist[count - 1].url , playlist[count - 1]._id ))
             }
-        }
     }
 
 
 export const actionNextTrack = (_id) =>
     async (dispatch, getState) => {
-        const playlist = [getState().playerReducer?.playlist?.tracks[0]]
-        if (playlist) {
+        const playlist = getState().playerReducer?.playlist?.playlist?.tracks
             const track_id = `${_id}`
-            const count = playlist[0].findIndex(el => el._id === track_id)
-            if(count + 1 < playlist[0].length){
-                  dispatch(actionSetTrack(playlist[0][count + 1].originalFileName ,playlist[0][count + 1].url , playlist[0][count + 1]._id ))
+            const count = playlist.findIndex(el => el._id === track_id)
+            if(count + 1 < playlist.length){
+                  dispatch(actionSetTrack(playlist[count + 1].originalFileName ,playlist[count + 1].url , playlist[count + 1]._id ))
             }
-        }
     }
 
 
@@ -177,11 +174,11 @@ export const actionRepeat = (repeat) =>
 
 export const actionRandom = () => 
       async(dispatch , getState) => {
-            const playlist = [getState().playerReducer?.playlist?.tracks[0]]
+            const playlist = getState().playerReducer?.playlist?.playlist?.tracks
             if(playlist){
-                const random =  Math.round(Math.random() * playlist[0].length)
-                if(random){
-                       dispatch(actionSetTrack(playlist[0][random].originalFileName ,playlist[0][random].url , playlist[0][random]._id ))
-                }
+                const random =  Math.round(Math.random() * playlist.length)
+                  if(random){
+                        dispatch(actionSetTrack(playlist[random].originalFileName ,playlist[random].url , playlist[random]._id ))
+                  }
             }
       }

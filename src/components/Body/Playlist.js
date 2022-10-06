@@ -43,10 +43,13 @@ import { CSS } from "@dnd-kit/utilities";
     }, [getTracks])
 
 
-
     const handleSetData = () => {
-          setPlaylist(playlist , params._id , tracks?.map(item => item)
+          setPlaylist(playlist
           )
+          // playlist.map((item) => {
+          //   return console.log(item)
+          // }) 
+          console.log(playlist)
           setTrack(originalFileName , url , _id)
     }
     
