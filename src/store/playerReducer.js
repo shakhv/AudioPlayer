@@ -3,7 +3,7 @@ import { store } from './store';
 
 const audio = new Audio;
 
-export function audioReducer(state = [], {type , playlist ,track, url ,_id ,  currentTime ,duration , volume , repeat , index}) {
+export function audioReducer(state = [], {type , playlist ,track, url ,_id ,  currentTime ,duration , volume , repeat }) {
     if (!state) {
           return {};
     }
@@ -52,12 +52,6 @@ export function audioReducer(state = [], {type , playlist ,track, url ,_id ,  cu
                 volume
           }
     }
-    if(type === "INDEX"){
-      return {
-            ...state,
-               index
-            }
-      }
     if(type === "SET_TRACK"){
           return {
                 ...state,
@@ -164,7 +158,7 @@ export const actionNextTrack = (_id) =>
                   dispatch(actionSetTrack(playlist[count + 1].originalFileName ,playlist[count + 1].url , playlist[count + 1]._id ))
             }
     }
-
+ывфывфвф
 
 export const actionRepeat = (repeat) => 
       async (dispatch) => {
