@@ -11,7 +11,6 @@ import { Grid, Slider } from '@mui/material'
 import { connect } from 'react-redux'
 import { actionFullCurrentTime, actionFullPause, actionFullPlay, actionNextTrack,actionPrevTrack, actionRandom, actionRepeat,actionSetVolume} from '../store/playerReducer'
 import { store } from '../store/store'
-
 import albumCover from '../images/albumCreate.png'
 
 
