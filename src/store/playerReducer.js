@@ -84,7 +84,7 @@ export const actionFullCurrentTime = (time) =>
         }, 0);
       dispatch(setCurrentTime(time))
       audio.onended = () =>{
-            getState().playerReducer?.repeat === true ?  
+            getState().playerReducer?.repeat ?  
             dispatch(actionSetTrack(getState().playerReducer?.track ,getState().playerReducer?.url , getState().playerReducer?._id))
             : dispatch(actionNextTrack(getState().playerReducer?._id))  
      } 
@@ -141,8 +141,8 @@ export const actionFullSetPlaylist = (playlist) =>
 export const actionPrevTrack = (_id) =>
     async (dispatch, getState) => {
         const playlist = getState().playerReducer?.playlist?.playlist?.tracks
-            const track_id = `${_id}`
-            const count = playlist.findIndex(el => el._id === track_id)
+            // const track_id = `${_id}`
+            const count = playlist.findIndex(el => el._id === _id)
             if(count > 0){
                   dispatch(actionSetTrack(playlist[count - 1].originalFileName ,playlist[count - 1].url , playlist[count - 1]._id ))
             }
@@ -152,13 +152,12 @@ export const actionPrevTrack = (_id) =>
 export const actionNextTrack = (_id) =>
     async (dispatch, getState) => {
         const playlist = getState().playerReducer?.playlist?.playlist?.tracks
-            const track_id = `${_id}`
-            const count = playlist.findIndex(el => el._id === track_id)
+            // const track_id = `${_id}`
+            const count = playlist.findIndex(el => el._id === _id)
             if(count + 1 < playlist.length){
                   dispatch(actionSetTrack(playlist[count + 1].originalFileName ,playlist[count + 1].url , playlist[count + 1]._id ))
             }
     }
-ывфывфвф
 
 export const actionRepeat = (repeat) => 
       async (dispatch) => {
@@ -170,9 +169,7 @@ export const actionRandom = () =>
       async(dispatch , getState) => {
             const playlist = getState().playerReducer?.playlist?.playlist?.tracks
             if(playlist){
-                const random =  Math.round(Math.random() * playlist.length)
-                  if(random){
-                        dispatch(actionSetTrack(playlist[random].originalFileName ,playlist[random].url , playlist[random]._id ))
-                  }
+                const random =  Math.floor(Math.random() * playlist.length)
+                  dispatch(actionSetTrack(playlist[random].originalFileName ,playlist[random].url , playlist[random]._id ))
             }
       }
